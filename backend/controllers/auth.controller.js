@@ -122,6 +122,30 @@ class AuthController {
             res.status(500).json({ error: error.message });
         }
     }
+    /**
+     * Emergency endpoint to reset admin password
+     * POST /api/auth/reset-admin
+     */
+    async resetAdminPassword(req, res) {
+        try {
+            const User = require('../models/user');
+            const bcrypt = require('bcryptjs');
+
+            const adminUser = await User.findOne({ username: 'admin' });
+            if (!adminUser) {
+                return res.status(404).json({ msg: 'Admin user not found' });
+            }
+
+            // Force reset password to 'admin123'
+            const salt = await bcrypt.genSalt(10);
+            adminUser.password = await bcrypt.hash('admin123', salt);
+            await adminUser.save();
+
+            res.json({ msg: 'Admin password reset to: admin123' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 }
 
 module.exports = new AuthController();
