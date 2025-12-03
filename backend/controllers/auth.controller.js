@@ -1,0 +1,83 @@
+// backend/controllers/auth.controller.js
+const userService = require('../services/user.service');
+const { validationResult } = require('express-validator');
+const { HTTP_STATUS } = require('../constants');
+const logger = require('../utils/logger');
+
+class AuthController {
+    /**
+     * Login user
+     * POST /api/auth/login
+     */
+    async login(req, res, next) {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json({ errors: errors.array() });
+            }
+
+            const { username, password } = req.body;
+            const result = await userService.login(username, password);
+
+            res.json(result);
+        } catch (error) {
+            if (error.message === 'Invalid credentials') {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json({ msg: error.message });
+            }
+            next(error);
+        }
+    }
+
+    /**
+     * Register new user (Admin only)
+     * POST /api/auth/register
+     */
+    async register(req, res, next) {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json({ errors: errors.array() });
+            }
+
+            const { username, password, securityKey } = req.body;
+            const result = await userService.createUser(username, password, securityKey);
+
+            res.json({ msg: `User ${result.username} created successfully` });
+        } catch (error) {
+            if (error.message === 'User already exists') {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json({ msg: error.message });
+            }
+            next(error);
+        }
+    }
+
+    /**
+     * Change password
+     * POST /api/auth/change-password
+     */
+    async changePassword(req, res, next) {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json({ errors: errors.array() });
+            }
+
+            const { oldPassword, newPassword, securityKey } = req.body;
+            const userId = req.user.id;
+
+            await userService.changePassword(userId, oldPassword, newPassword, securityKey);
+
+            res.json({ msg: 'Password changed successfully! Please login again.' });
+        } catch (error) {
+            if (error.message === 'User not found') {
+                return res.status(HTTP_STATUS.NOT_FOUND).json({ msg: error.message });
+            }
+            if (error.message === 'Old password is incorrect' || error.message === 'Security key is incorrect') {
+                return res.status(HTTP_STATUS.BAD_REQUEST).json({ msg: error.message });
+            }
+            next(error);
+        }
+    }
+}
+
+module.exports = new AuthController();
