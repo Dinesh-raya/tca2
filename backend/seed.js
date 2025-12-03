@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/user');
 
+// ⚠️  WARNING: This file is for LOCAL DEVELOPMENT ONLY
+// DO NOT use these passwords in production
+// These are dummy credentials for initial setup/testing
 const users = [
     { username: 'abc', password: 'pass1', securityKey: 'key1' },
     { username: 'xyz', password: 'pass2', securityKey: 'key2' },

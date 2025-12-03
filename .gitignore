@@ -37,3 +37,20 @@ coverage/
 
 # Misc
 *.pem
+
+# Security - Never commit sensitive files
+*.key
+*.p12
+*.pfx
+secrets/
+.secrets/
+credentials/
+
+# Uploads and user data
+uploads/
+*.jpg
+*.png
+*.jpeg
+*.gif
+*.mp4
+*.mov
