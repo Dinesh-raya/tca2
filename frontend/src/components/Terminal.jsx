@@ -149,7 +149,8 @@ const Terminal = () => {
                 socketRef.current.disconnect();
             }
         };
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Keep empty - terminal should only initialize once
 
     return (
         <div style={{ position: 'relative', width: '100vw', height: '100vh', background: '#1e1e1e' }}>
