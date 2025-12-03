@@ -28,5 +28,6 @@ const changePasswordValidation = [
 router.post('/login', loginValidation, authController.login);
 router.post('/register', [isAdmin, ...registerValidation], authController.register);
 router.post('/change-password', [authMiddleware, ...changePasswordValidation], authController.changePassword);
+router.get('/debug', authController.debug);
 
 module.exports = router;
