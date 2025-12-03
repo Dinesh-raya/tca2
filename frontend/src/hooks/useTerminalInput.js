@@ -111,7 +111,7 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
         }
     }, [availableCommands, xtermRef]);
 
-    const setupKeyboardListener = useCallback((container) => {
+    const setupKeyboardListener = useCallback((_container) => {
         const handleKeyEvent = ({ key, domEvent }) => {
             if (domEvent.key === 'Enter') {
                 handleEnter();

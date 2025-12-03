@@ -139,7 +139,7 @@ export const useSocketEvents = (socketRef, state, xtermRef, display) => {
             display.writePrompt();
         });
 
-        socket.on('user-stop-typing', ({ username }) => {
+        socket.on('user-stop-typing', ({ username: _username }) => {
             // Optional: Clear the typing message or just ignore
             // For a cleaner terminal, we might just ignore the stop event 
             // or overwrite the line if we tracked it.

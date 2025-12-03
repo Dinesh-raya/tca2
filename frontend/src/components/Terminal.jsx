@@ -7,7 +7,6 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
-import { io } from 'socket.io-client';
 import 'xterm/css/xterm.css';
 import {
     useTerminalInput,
@@ -42,7 +41,6 @@ const Terminal = () => {
 
     // Initialize hooks
     const display = useTerminalDisplay(xtermRef, state);
-    const input = useTerminalInput(xtermRef, state, null, null, display.getPrompt, display.writePrompt, AVAILABLE_COMMANDS);
     const events = useSocketEvents(socketRef, state, xtermRef, display);
 
     // Setup commands after other dependencies are ready
@@ -91,18 +89,18 @@ const Terminal = () => {
         xtermRef.current.focus();
 
         // Setup input handler with command/message callbacks
-        const inputBuffer = useRef('');
+        let inputBuffer = '';
         const getPrompt = display.getPrompt;
         const writePrompt = display.writePrompt;
 
         xtermRef.current.onKey(({ key, domEvent }) => {
             if (domEvent.key === 'Enter') {
                 const promptText = getPrompt();
-                const totalLength = promptText.length + inputBuffer.current.length;
+                const totalLength = promptText.length + inputBuffer.length;
                 xtermRef.current.write('\r' + ' '.repeat(totalLength) + '\r');
 
-                const trimmedInput = inputBuffer.current.trim();
-                inputBuffer.current = '';
+                const trimmedInput = inputBuffer.trim();
+                inputBuffer = '';
 
                 if (trimmedInput.length > 0) {
                     if (trimmedInput.startsWith('/')) {
@@ -114,8 +112,8 @@ const Terminal = () => {
                     writePrompt();
                 }
             } else if (domEvent.key === 'Backspace') {
-                if (inputBuffer.current.length > 0) {
-                    inputBuffer.current = inputBuffer.current.slice(0, -1);
+                if (inputBuffer.length > 0) {
+                    inputBuffer = inputBuffer.slice(0, -1);
                     xtermRef.current.write('\b \b');
                 }
             } else if (
@@ -123,7 +121,7 @@ const Terminal = () => {
                 !domEvent.ctrlKey &&
                 !domEvent.metaKey
             ) {
-                inputBuffer.current += key;
+                inputBuffer += key;
                 xtermRef.current.write(key);
             }
         });
