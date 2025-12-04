@@ -15,6 +15,7 @@ export const promptForPassword = (xtermRef, promptText = 'Password: ') => {
         xtermRef.current.write(promptText);
         let password = '';
         let active = true;
+        let disposable;
 
         const listener = ({ key, domEvent }) => {
             if (!active) return;
@@ -23,7 +24,7 @@ export const promptForPassword = (xtermRef, promptText = 'Password: ') => {
                 // User pressed Enter - submit password
                 xtermRef.current.write('\r\n');
                 active = false;
-                xtermRef.current.onKey(null); // Remove listener
+                if (disposable) disposable.dispose(); // Remove listener
                 resolve(password);
             } else if (domEvent.key === 'Backspace' && password.length > 0) {
                 // Remove last character from password
@@ -39,7 +40,7 @@ export const promptForPassword = (xtermRef, promptText = 'Password: ') => {
             // Ignore all other keys (arrows, ctrl+c, etc. handled by terminal)
         };
 
-        xtermRef.current.onKey(listener);
+        disposable = xtermRef.current.onKey(listener);
     });
 };
 
@@ -66,6 +67,7 @@ export const getVisibleInput = (xtermRef, promptText = 'Enter: ') => {
         xtermRef.current.write(promptText);
         let input = '';
         let active = true;
+        let disposable;
 
         const listener = ({ key, domEvent }) => {
             if (!active) return;
@@ -73,7 +75,7 @@ export const getVisibleInput = (xtermRef, promptText = 'Enter: ') => {
             if (domEvent.key === 'Enter') {
                 xtermRef.current.write('\r\n');
                 active = false;
-                xtermRef.current.onKey(null);
+                if (disposable) disposable.dispose();
                 resolve(input);
             } else if (domEvent.key === 'Backspace' && input.length > 0) {
                 input = input.slice(0, -1);
@@ -84,7 +86,7 @@ export const getVisibleInput = (xtermRef, promptText = 'Enter: ') => {
             }
         };
 
-        xtermRef.current.onKey(listener);
+        disposable = xtermRef.current.onKey(listener);
     });
 };
 

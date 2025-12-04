@@ -11,7 +11,8 @@ import 'xterm/css/xterm.css';
 import {
     useTerminalDisplay,
     useTerminalCommands,
-    useSocketEvents
+    useSocketEvents,
+    useTerminalInput
 } from '../hooks';
 
 const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
@@ -65,6 +66,8 @@ const Terminal = () => {
         }
     };
 
+    const input = useTerminalInput(xtermRef, state, handleCommand, handleMessage, display.getPrompt, display.writePrompt, AVAILABLE_COMMANDS);
+
     useLayoutEffect(() => {
         if (!terminalRef.current) return;
 
@@ -87,43 +90,8 @@ const Terminal = () => {
         fitAddonRef.current.fit();
         xtermRef.current.focus();
 
-        // Setup input handler with command/message callbacks
-        let inputBuffer = '';
-        const getPrompt = display.getPrompt;
-        const writePrompt = display.writePrompt;
-
-        xtermRef.current.onKey(({ key, domEvent }) => {
-            if (domEvent.key === 'Enter') {
-                const promptText = getPrompt();
-                const totalLength = promptText.length + inputBuffer.length;
-                xtermRef.current.write('\r' + ' '.repeat(totalLength) + '\r');
-
-                const trimmedInput = inputBuffer.trim();
-                inputBuffer = '';
-
-                if (trimmedInput.length > 0) {
-                    if (trimmedInput.startsWith('/')) {
-                        handleCommand(trimmedInput);
-                    } else {
-                        handleMessage(trimmedInput);
-                    }
-                } else {
-                    writePrompt();
-                }
-            } else if (domEvent.key === 'Backspace') {
-                if (inputBuffer.length > 0) {
-                    inputBuffer = inputBuffer.slice(0, -1);
-                    xtermRef.current.write('\b \b');
-                }
-            } else if (
-                domEvent.key.length === 1 &&
-                !domEvent.ctrlKey &&
-                !domEvent.metaKey
-            ) {
-                inputBuffer += key;
-                xtermRef.current.write(key);
-            }
-        });
+        // Setup input handler
+        const cleanupInput = input.setupKeyboardListener();
 
         // Setup socket event listeners
         events.setupSocketListeners();
@@ -141,6 +109,7 @@ const Terminal = () => {
 
         // Cleanup
         return () => {
+            cleanupInput();
             xtermRef.current?.dispose();
             if (container) container.removeEventListener('click', handleClick);
             window.removeEventListener('resize', handleResize);
