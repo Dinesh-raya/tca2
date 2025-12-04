@@ -5,6 +5,17 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 
+// CORS bypass for this temporary endpoint
+router.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
 /**
  * TEMPORARY ENDPOINT - Reset admin credentials
  * POST /api/reset-admin
