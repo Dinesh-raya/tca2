@@ -25,7 +25,7 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
 
         try {
             const password = await promptForPassword(xtermRef, 'Password: ');
-            
+
             if (!password) {
                 display.writeOutput('Login cancelled.');
                 display.writePrompt();
@@ -90,9 +90,9 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         }
 
         if (socketRef.current) {
-            socketRef.current.emit('join-room', { 
-                room: args[0], 
-                username: state.current.username 
+            socketRef.current.emit('join-room', {
+                room: args[0],
+                username: state.current.username
             });
         }
     }, [state, socketRef, display]);
@@ -303,6 +303,89 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         }
     }, [state, backendUrl, display]);
 
+    const handleCreateRoomCommand = useCallback(async (args) => {
+        if (!state.current.loggedIn) {
+            display.writeError('Please login first.');
+            display.writePrompt();
+            return;
+        }
+
+        if (args.length < 1) {
+            display.writeOutput('Usage: /createroom <roomname>');
+            display.writePrompt();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${backendUrl}/api/admin/create-room`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': state.current.token
+                },
+                body: JSON.stringify({ roomName: args[0] })
+            });
+
+            const body = await res.json();
+
+            if (res.status === 200) {
+                display.writeSuccess(body.msg);
+            } else {
+                display.writeError(body.msg || 'Failed to create room');
+            }
+            display.writePrompt();
+        } catch (err) {
+            display.writeError('Network error.');
+            display.writePrompt();
+        }
+    }, [state, backendUrl, display]);
+
+    const handleGiveAccessBulkCommand = useCallback(async (args) => {
+        if (!state.current.loggedIn) {
+            display.writeError('Please login first.');
+            display.writePrompt();
+            return;
+        }
+
+        if (args.length < 2) {
+            display.writeOutput('Usage: /giveaccess <user1,user2,user3> <roomname>');
+            display.writePrompt();
+            return;
+        }
+
+        const usernames = args[0].split(',').map(u => u.trim()).filter(u => u.length > 0);
+        const roomName = args[1];
+
+        if (usernames.length === 0) {
+            display.writeError('No valid usernames provided');
+            display.writePrompt();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${backendUrl}/api/admin/grant-bulk-access`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': state.current.token
+                },
+                body: JSON.stringify({ usernames, roomName })
+            });
+
+            const body = await res.json();
+
+            if (res.status === 200) {
+                display.writeSuccess(body.msg);
+            } else {
+                display.writeError(body.msg || 'Failed to grant access');
+            }
+            display.writePrompt();
+        } catch (err) {
+            display.writeError('Network error.');
+            display.writePrompt();
+        }
+    }, [state, backendUrl, display]);
+
     const handleCommand = useCallback((cmd) => {
         const [command, ...args] = cmd.split(' ');
 
@@ -336,7 +419,10 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
                 handleChangePassCommand(args);
                 break;
             case '/giveaccess':
-                handleGiveAccessCommand(args);
+                handleGiveAccessBulkCommand(args);
+                break;
+            case '/createroom':
+                handleCreateRoomCommand(args);
                 break;
             case '/logout':
                 handleLogoutCommand();
@@ -358,7 +444,8 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         handleExitCommand,
         handleAddUserCommand,
         handleChangePassCommand,
-        handleGiveAccessCommand,
+        handleGiveAccessBulkCommand,
+        handleCreateRoomCommand,
         handleLogoutCommand
     ]);
 

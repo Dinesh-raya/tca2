@@ -61,7 +61,8 @@ export const useTerminalDisplay = (xtermRef, state) => {
             '/logout                                        - Logout',
             '/adduser <username> <password> <securitykey>   - (Admin) Create new user',
             '/changepass <oldpass> <newpass> <securitykey>  - Change your password',
-            '/giveaccess <username> <roomname>              - (Admin) Grant room access',
+            '/createroom <roomname>                         - (Admin) Create new room',
+            '/giveaccess <user1,user2,...> <roomname>       - (Admin) Grant room access to users',
             '/quit                                          - Quit the app',
             ''
         ];
