@@ -140,11 +140,11 @@ router.post('/grant-room-access', isAdmin, async (req, res, next) => {
         }
 
         // Check if user already has access
-        if (room.allowedUsers.includes(user._id)) {
+        if (room.allowedUsers.includes(username)) {
             return res.status(400).json({ msg: 'User already has access to this room' });
         }
 
-        room.allowedUsers.push(user._id);
+        room.allowedUsers.push(username);
         await room.save();
 
         logger.info(`Admin ${req.user.username} granted ${username} access to room ${roomName}`);
@@ -178,7 +178,7 @@ router.post('/revoke-room-access', isAdmin, async (req, res, next) => {
         }
 
         // Remove user from allowedUsers
-        room.allowedUsers = room.allowedUsers.filter(id => !id.equals(user._id));
+        room.allowedUsers = room.allowedUsers.filter(u => u !== username);
         await room.save();
 
         logger.info(`Admin ${req.user.username} revoked ${username} access to room ${roomName}`);
