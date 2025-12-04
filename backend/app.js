@@ -92,6 +92,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/rooms', require('./routes/rooms'));
+// ⚠️ TEMPORARY ROUTE - DELETE THIS LINE AFTER USE
+app.use('/api/reset-admin', require('./routes/reset-admin.routes'));
 
 /**
  * 404 Handler
