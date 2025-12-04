@@ -331,11 +331,13 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             if (res.status === 200) {
                 display.writeSuccess(body.msg);
             } else {
-                display.writeError(body.msg || 'Failed to create room');
+                // Show detailed error for debugging
+                const errorMsg = body.msg || body.message || 'Unknown error';
+                display.writeError(`[${res.status}] ${errorMsg}`);
             }
             display.writePrompt();
         } catch (err) {
-            display.writeError('Network error.');
+            display.writeError(`Network error: ${err.message}`);
             display.writePrompt();
         }
     }, [state, backendUrl, display]);
