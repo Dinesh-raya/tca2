@@ -228,4 +228,70 @@ router.delete('/users/:username', isAdmin, async (req, res, next) => {
     }
 });
 
+/**
+ * POST /api/admin/kick-user
+ * Kick user from room (admin only)
+ */
+router.post('/kick-user', isAdmin, async (req, res, next) => {
+    try {
+        const { username, roomName } = req.body;
+
+        if (!username || !roomName) {
+            return res.status(400).json({ msg: 'Username and room name are required' });
+        }
+
+        const room = await Room.findOne({ name: roomName });
+        if (!room) {
+            return res.status(404).json({ msg: 'Room not found' });
+        }
+
+        // Remove user from allowed users (kick)
+        room.allowedUsers = room.allowedUsers.filter(u => u !== username);
+        await room.save();
+
+        logger.info(`Admin ${req.user.username} kicked ${username} from ${roomName}`);
+        res.json({ msg: `Kicked ${username} from ${roomName}` });
+    } catch (err) {
+        logger.error('Kick user error:', err.message);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+
+/**
+ * POST /api/admin/ban-user
+ * Ban user from room permanently (admin only)
+ */
+router.post('/ban-user', isAdmin, async (req, res, next) => {
+    try {
+        const { username, roomName } = req.body;
+
+        if (!username || !roomName) {
+            return res.status(400).json({ msg: 'Username and room name are required' });
+        }
+
+        const room = await Room.findOne({ name: roomName });
+        if (!room) {
+            return res.status(404).json({ msg: 'Room not found' });
+        }
+
+        // Initialize bannedUsers array if it doesn't exist
+        if (!room.bannedUsers) {
+            room.bannedUsers = [];
+        }
+
+        // Add user to banned list and remove from allowed
+        if (!room.bannedUsers.includes(username)) {
+            room.bannedUsers.push(username);
+        }
+        room.allowedUsers = room.allowedUsers.filter(u => u !== username);
+        await room.save();
+
+        logger.info(`Admin ${req.user.username} banned ${username} from ${roomName}`);
+        res.json({ msg: `Banned ${username} from ${roomName}` });
+    } catch (err) {
+        logger.error('Ban user error:', err.message);
+        res.status(500).json({ msg: 'Server error' });
+    }
+});
+
 module.exports = router;

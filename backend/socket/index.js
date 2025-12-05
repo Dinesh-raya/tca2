@@ -56,6 +56,12 @@ module.exports = (io) => {
             logger.info(`Test event received: ${msg}`);
             socket.emit(SOCKET_EVENTS.TEST_REPLY, 'Hello from backend!');
         });
+
+        // Get Online Users (NEW FEATURE)
+        socket.on('get-online-users', () => {
+            const onlineUsers = socketManager.getOnlineUsers();
+            socket.emit('online-users-list', { users: onlineUsers });
+        });
     });
 };
 

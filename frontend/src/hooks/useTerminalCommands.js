@@ -392,6 +392,163 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         }
     }, [state, backendUrl, display]);
 
+    // === NEW IMPROVEMENT COMMANDS ===
+
+    // /clear - Clear terminal screen
+    const handleClearCommand = useCallback(() => {
+        if (xtermRef.current) {
+            xtermRef.current.clear();
+            display.writeOutput('Terminal cleared.');
+            display.writePrompt();
+        }
+    }, [xtermRef, display]);
+
+    // /online - Show all online users
+    const handleOnlineCommand = useCallback(() => {
+        if (!state.current.loggedIn) {
+            display.writeError('Please login first.');
+            display.writePrompt();
+            return;
+        }
+
+        if (socketRef.current) {
+            socketRef.current.emit('get-online-users');
+        }
+    }, [state, socketRef, display]);
+
+    // /theme - Change terminal theme
+    const handleThemeCommand = useCallback((args) => {
+        const themes = {
+            default: { background: '#1e1e1e', foreground: '#00ff00', cursor: '#00ff00' },
+            matrix: { background: '#000000', foreground: '#00ff41', cursor: '#00ff41' },
+            ocean: { background: '#0a192f', foreground: '#64ffda', cursor: '#64ffda' },
+            fire: { background: '#1a0a00', foreground: '#ff6b35', cursor: '#ff6b35' },
+            hacker: { background: '#0d0d0d', foreground: '#ffb000', cursor: '#ffb000' },
+            cyberpunk: { background: '#0f0f23', foreground: '#ff00ff', cursor: '#00ffff' }
+        };
+
+        if (args.length < 1) {
+            display.writeOutput('Available themes: ' + Object.keys(themes).join(', '));
+            display.writeOutput('Usage: /theme <name>');
+            display.writePrompt();
+            return;
+        }
+
+        const themeName = args[0].toLowerCase();
+        const theme = themes[themeName];
+
+        if (!theme) {
+            display.writeError(`Unknown theme: ${themeName}`);
+            display.writeOutput('Available: ' + Object.keys(themes).join(', '));
+            display.writePrompt();
+            return;
+        }
+
+        if (xtermRef.current) {
+            xtermRef.current.options.theme = theme;
+            display.writeSuccess(`Theme changed to: ${themeName}`);
+            display.writePrompt();
+        }
+    }, [xtermRef, display]);
+
+    // /kick - Admin kick user from room
+    const handleKickCommand = useCallback(async (args) => {
+        if (!state.current.loggedIn) {
+            display.writeError('Please login first.');
+            display.writePrompt();
+            return;
+        }
+
+        if (!state.current.currentRoom) {
+            display.writeError('You must be in a room to kick users.');
+            display.writePrompt();
+            return;
+        }
+
+        if (args.length < 1) {
+            display.writeOutput('Usage: /kick <username>');
+            display.writePrompt();
+            return;
+        }
+
+        const targetUser = args[0];
+
+        try {
+            const res = await fetch(`${backendUrl}/api/admin/kick-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': state.current.token
+                },
+                body: JSON.stringify({
+                    username: targetUser,
+                    roomName: state.current.currentRoom
+                })
+            });
+
+            const body = await res.json();
+
+            if (res.status === 200) {
+                display.writeSuccess(body.msg || `Kicked ${targetUser} from room`);
+            } else {
+                display.writeError(`[${res.status}] ${body.msg || 'Failed to kick user'}`);
+            }
+            display.writePrompt();
+        } catch (err) {
+            display.writeError('Network error.');
+            display.writePrompt();
+        }
+    }, [state, backendUrl, display]);
+
+    // /ban - Admin ban user from room
+    const handleBanCommand = useCallback(async (args) => {
+        if (!state.current.loggedIn) {
+            display.writeError('Please login first.');
+            display.writePrompt();
+            return;
+        }
+
+        if (!state.current.currentRoom) {
+            display.writeError('You must be in a room to ban users.');
+            display.writePrompt();
+            return;
+        }
+
+        if (args.length < 1) {
+            display.writeOutput('Usage: /ban <username>');
+            display.writePrompt();
+            return;
+        }
+
+        const targetUser = args[0];
+
+        try {
+            const res = await fetch(`${backendUrl}/api/admin/ban-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': state.current.token
+                },
+                body: JSON.stringify({
+                    username: targetUser,
+                    roomName: state.current.currentRoom
+                })
+            });
+
+            const body = await res.json();
+
+            if (res.status === 200) {
+                display.writeSuccess(body.msg || `Banned ${targetUser} from room`);
+            } else {
+                display.writeError(`[${res.status}] ${body.msg || 'Failed to ban user'}`);
+            }
+            display.writePrompt();
+        } catch (err) {
+            display.writeError('Network error.');
+            display.writePrompt();
+        }
+    }, [state, backendUrl, display]);
+
     const handleCommand = useCallback((cmd) => {
         const [command, ...args] = cmd.split(' ');
 
@@ -436,6 +593,22 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             case '/quit':
                 display.writeOutput('Thank you for using Terminal Chat!');
                 break;
+            // === NEW IMPROVEMENT COMMANDS ===
+            case '/clear':
+                handleClearCommand();
+                break;
+            case '/online':
+                handleOnlineCommand();
+                break;
+            case '/theme':
+                handleThemeCommand(args);
+                break;
+            case '/kick':
+                handleKickCommand(args);
+                break;
+            case '/ban':
+                handleBanCommand(args);
+                break;
             default:
                 display.writeError(`Unknown command: ${command}. Type /help for list of commands.`);
                 display.writePrompt();
@@ -452,7 +625,12 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         handleChangePassCommand,
         handleGiveAccessBulkCommand,
         handleCreateRoomCommand,
-        handleLogoutCommand
+        handleLogoutCommand,
+        handleClearCommand,
+        handleOnlineCommand,
+        handleThemeCommand,
+        handleKickCommand,
+        handleBanCommand
     ]);
 
     return {

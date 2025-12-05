@@ -25,6 +25,27 @@ export const useSocketEvents = (socketRef, state, xtermRef, display) => {
         socket.off('room-history');
         socket.off('dm-history');
         socket.off('dm-error');
+        socket.off('online-users-list');
+        socket.off('user-typing');
+        socket.off('user-stop-typing');
+
+        // Online users list (NEW FEATURE)
+        socket.on('online-users-list', ({ users }) => {
+            display.clearLine();
+            display.writeOutput(`Online users (${users.length}): ${users.join(', ')}`);
+            display.writePrompt();
+        });
+
+        // Typing indicators (NEW FEATURE)
+        socket.on('user-typing', ({ username }) => {
+            display.clearLine();
+            display.writeOutput(`${username} is typing...`);
+            display.writePrompt();
+        });
+
+        socket.on('user-stop-typing', () => {
+            // Clear typing indicator - no action needed, next message will clear
+        });
 
         // Join room events
         socket.on('join-room-success', ({ room }) => {
