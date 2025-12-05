@@ -18,6 +18,7 @@ describe('Environment Validation', () => {
     });
 
     it('should exit if required variables are missing', () => {
+        process.env.JWT_SECRET = 'a_valid_secret';
         delete process.env.MONGODB_URI;
         validateEnvironment();
         expect(process.exit).toHaveBeenCalledWith(1);

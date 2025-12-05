@@ -54,3 +54,4 @@ uploads/
 *.gif
 *.mp4
 *.mov
+backend/logs/

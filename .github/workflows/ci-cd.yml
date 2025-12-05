@@ -38,7 +38,7 @@ jobs:
         run: npm run test:backend
         env:
           MONGODB_URI: mongodb://localhost:27017/tca-test
-          JWT_SECRET: test-secret-key
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
           NODE_ENV: test
       
       - name: Run frontend unit tests
