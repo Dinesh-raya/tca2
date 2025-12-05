@@ -549,6 +549,100 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         }
     }, [state, backendUrl, display]);
 
+    // /sound - Toggle sound notifications
+    const handleSoundCommand = useCallback((args) => {
+        if (args.length < 1) {
+            const status = state.current.soundEnabled ? 'ON' : 'OFF';
+            display.writeOutput(`Sound notifications are currently: ${status}`);
+            display.writeOutput('Usage: /sound on|off');
+            display.writePrompt();
+            return;
+        }
+
+        const setting = args[0].toLowerCase();
+        if (setting === 'on') {
+            state.current.soundEnabled = true;
+            display.writeSuccess('Sound notifications enabled');
+        } else if (setting === 'off') {
+            state.current.soundEnabled = false;
+            display.writeSuccess('Sound notifications disabled');
+        } else {
+            display.writeError('Invalid option. Use: /sound on or /sound off');
+        }
+        display.writePrompt();
+    }, [state, display]);
+
+    // /profile - Show user profile info
+    const handleProfileCommand = useCallback(async (args) => {
+        if (!state.current.loggedIn) {
+            display.writeError('Please login first.');
+            display.writePrompt();
+            return;
+        }
+
+        const targetUser = args.length > 0 ? args[0] : state.current.username;
+
+        try {
+            const res = await fetch(`${backendUrl}/api/users/profile/${targetUser}`, {
+                headers: { 'x-auth-token': state.current.token }
+            });
+
+            const body = await res.json();
+
+            if (res.status === 200) {
+                display.writeOutput(`\n═══ User Profile: ${targetUser} ═══`);
+                display.writeOutput(`Username: ${body.username}`);
+                display.writeOutput(`Role: ${body.role || 'user'}`);
+                display.writeOutput(`Created: ${new Date(body.createdAt).toLocaleDateString()}`);
+                display.writeOutput(`Online: ${body.isOnline ? '🟢 Yes' : '⚫ No'}`);
+                display.writeOutput('═══════════════════════════');
+            } else {
+                display.writeError(body.msg || 'User not found');
+            }
+            display.writePrompt();
+        } catch (err) {
+            display.writeError('Network error.');
+            display.writePrompt();
+        }
+    }, [state, backendUrl, display]);
+
+    // /roominfo - Show room information
+    const handleRoomInfoCommand = useCallback(async () => {
+        if (!state.current.loggedIn) {
+            display.writeError('Please login first.');
+            display.writePrompt();
+            return;
+        }
+
+        if (!state.current.currentRoom) {
+            display.writeError('You must be in a room to see room info.');
+            display.writePrompt();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${backendUrl}/api/rooms/info/${state.current.currentRoom}`, {
+                headers: { 'x-auth-token': state.current.token }
+            });
+
+            const body = await res.json();
+
+            if (res.status === 200) {
+                display.writeOutput(`\n═══ Room Info: ${body.name} ═══`);
+                display.writeOutput(`Members: ${body.memberCount}`);
+                display.writeOutput(`Online Now: ${body.onlineCount}`);
+                display.writeOutput(`Created: ${new Date(body.createdAt).toLocaleDateString()}`);
+                display.writeOutput('═══════════════════════════');
+            } else {
+                display.writeError(body.msg || 'Could not get room info');
+            }
+            display.writePrompt();
+        } catch (err) {
+            display.writeError('Network error.');
+            display.writePrompt();
+        }
+    }, [state, backendUrl, display]);
+
     const handleCommand = useCallback((cmd) => {
         const [command, ...args] = cmd.split(' ');
 
@@ -609,6 +703,16 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             case '/ban':
                 handleBanCommand(args);
                 break;
+            // === QUICK WIN COMMANDS ===
+            case '/sound':
+                handleSoundCommand(args);
+                break;
+            case '/profile':
+                handleProfileCommand(args);
+                break;
+            case '/roominfo':
+                handleRoomInfoCommand();
+                break;
             default:
                 display.writeError(`Unknown command: ${command}. Type /help for list of commands.`);
                 display.writePrompt();
@@ -630,7 +734,10 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         handleOnlineCommand,
         handleThemeCommand,
         handleKickCommand,
-        handleBanCommand
+        handleBanCommand,
+        handleSoundCommand,
+        handleProfileCommand,
+        handleRoomInfoCommand
     ]);
 
     return {
