@@ -6,37 +6,6 @@
 import { useCallback } from 'react';
 import { sanitizeMessage, sanitizeUsername, sanitizeRoomName } from '../utils/sanitization';
 
-// Helper: Format timestamp
-const formatTime = (date) => {
-    const d = date ? new Date(date) : new Date();
-    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-};
-
-// Helper: Generate consistent color for username
-const getUserColor = (username) => {
-    const colors = [
-        '\x1b[36m',  // Cyan
-        '\x1b[33m',  // Yellow
-        '\x1b[35m',  // Magenta
-        '\x1b[32m',  // Green
-        '\x1b[34m',  // Blue
-        '\x1b[91m',  // Bright Red
-        '\x1b[92m',  // Bright Green
-        '\x1b[93m',  // Bright Yellow
-        '\x1b[94m',  // Bright Blue
-        '\x1b[95m',  // Bright Magenta
-        '\x1b[96m',  // Bright Cyan
-    ];
-    // Hash username to get consistent color
-    let hash = 0;
-    for (let i = 0; i < username.length; i++) {
-        hash = username.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-};
-
-const RESET = '\x1b[0m';
-
 export const useTerminalDisplay = (xtermRef, state) => {
     const getPrompt = useCallback(() => {
         if (state.current.inDM) {
@@ -102,9 +71,6 @@ export const useTerminalDisplay = (xtermRef, state) => {
             '/theme <name>                                  - Change terminal theme',
             '/kick <username>                               - (Admin) Kick user from room',
             '/ban <username>                                - (Admin) Ban user from room',
-            '/sound on|off                                  - Toggle sound notifications',
-            '/profile [username]                            - View user profile',
-            '/roominfo                                      - View current room info',
             ''
         ];
         if (xtermRef.current) {
@@ -132,13 +98,11 @@ export const useTerminalDisplay = (xtermRef, state) => {
         }
     }, [xtermRef]);
 
-    const displayRoomMessage = useCallback((room, user, message, timestamp) => {
+    const displayRoomMessage = useCallback((room, user, message) => {
         const sanitizedUser = sanitizeUsername(user);
         const sanitizedMsg = sanitizeMessage(message);
-        const time = formatTime(timestamp);
-        const color = getUserColor(user);
         if (xtermRef.current) {
-            xtermRef.current.write(`\r\n\x1b[90m[${time}]\x1b[0m [${room}] ${color}${sanitizedUser}${RESET}: ${sanitizedMsg}\r\n`);
+            xtermRef.current.write(`\r\n[${room}] ${sanitizedUser}: ${sanitizedMsg}\r\n`);
         }
     }, [xtermRef]);
 
@@ -147,19 +111,14 @@ export const useTerminalDisplay = (xtermRef, state) => {
         const other = direction === 'to' ? data.to : data.from;
         const sanitizedOther = sanitizeUsername(other);
         const sanitizedMsg = sanitizeMessage(data.msg);
-        const time = formatTime(data.timestamp);
-        const color = getUserColor(other);
         if (xtermRef.current) {
-            xtermRef.current.write(`\r\n\x1b[90m[${time}]\x1b[0m [DM ${direction} ${color}${sanitizedOther}${RESET}]: ${sanitizedMsg}\r\n`);
+            xtermRef.current.write(`\r\n[DM ${direction} ${sanitizedOther}]: ${sanitizedMsg}\r\n`);
         }
     }, [xtermRef]);
 
     const displayUserList = useCallback((users) => {
         if (xtermRef.current && users && users.length > 0) {
-            const userList = users.map(u => {
-                const color = getUserColor(u);
-                return `${color}${sanitizeUsername(u)}${RESET}`;
-            }).join(', ');
+            const userList = users.map(u => sanitizeUsername(u)).join(', ');
             xtermRef.current.write(`Users in room: ${userList}\r\n`);
         }
     }, [xtermRef]);
@@ -170,9 +129,7 @@ export const useTerminalDisplay = (xtermRef, state) => {
                 const room = sanitizeRoomName(msg.room);
                 const user = sanitizeUsername(msg.from);
                 const text = sanitizeMessage(msg.text);
-                const time = formatTime(msg.timestamp);
-                const color = getUserColor(msg.from);
-                xtermRef.current.write(`\x1b[90m[${time}]\x1b[0m [${room}] ${color}${user}${RESET}: ${text}\r\n`);
+                xtermRef.current.write(`[${room}] ${user}: ${text}\r\n`);
             });
         }
     }, [xtermRef]);
@@ -184,9 +141,7 @@ export const useTerminalDisplay = (xtermRef, state) => {
                 const other = direction === 'to' ? msg.to : msg.from;
                 const sanitizedOther = sanitizeUsername(other);
                 const text = sanitizeMessage(msg.text);
-                const time = formatTime(msg.timestamp);
-                const color = getUserColor(other);
-                xtermRef.current.write(`\x1b[90m[${time}]\x1b[0m [DM ${direction} ${color}${sanitizedOther}${RESET}]: ${text}\r\n`);
+                xtermRef.current.write(`[DM ${direction} ${sanitizedOther}]: ${text}\r\n`);
             });
         }
     }, [xtermRef]);

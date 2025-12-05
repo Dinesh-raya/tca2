@@ -25,7 +25,6 @@ const authRoutes = require('./routes/auth.routes');
 const roomRoutes = require('./routes/room.routes');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user.routes');
-const resetAdminRoutes = require('./routes/reset-admin.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -117,7 +116,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/temp', resetAdminRoutes);
 
 // Error Handling
 app.use(notFound);

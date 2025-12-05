@@ -43,13 +43,12 @@ const Terminal = () => {
     const display = useTerminalDisplay(xtermRef, state);
     const events = useSocketEvents(socketRef, state, xtermRef, display);
 
-    // Ref for commands to break circular dependency
-    const commandsRef = useRef(null);
+    // Setup commands after other dependencies are ready
+    const commands = useTerminalCommands(state, socketRef, xtermRef, backendUrl, display, events.setupSocketListeners);
 
+    // Update input hook with command/message handlers
     const handleCommand = (cmd) => {
-        if (commandsRef.current) {
-            commandsRef.current.handleCommand(cmd);
-        }
+        commands.handleCommand(cmd);
     };
 
     const handleMessage = (msg) => {
@@ -68,14 +67,6 @@ const Terminal = () => {
     };
 
     const input = useTerminalInput(xtermRef, state, handleCommand, handleMessage, display.getPrompt, display.writePrompt, AVAILABLE_COMMANDS);
-
-    // Setup commands with input locking
-    const commands = useTerminalCommands(state, socketRef, xtermRef, backendUrl, display, events.setupSocketListeners, input.lockInput, input.unlockInput);
-
-    // Update ref
-    useLayoutEffect(() => {
-        commandsRef.current = commands;
-    });
 
     useLayoutEffect(() => {
         if (!terminalRef.current) return;

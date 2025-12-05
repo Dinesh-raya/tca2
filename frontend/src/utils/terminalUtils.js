@@ -17,17 +17,8 @@ export const promptForPassword = (xtermRef, promptText = 'Password: ') => {
         let active = true;
         let disposable;
 
-        const listener = (e) => {
+        const listener = ({ key, domEvent }) => {
             if (!active) return;
-
-            // Stop propagation to prevent other listeners (like main terminal input) from firing
-            if (e.domEvent) {
-                e.domEvent.stopPropagation();
-                e.domEvent.preventDefault();
-            }
-
-            const key = e.key;
-            const domEvent = e.domEvent;
 
             if (domEvent.key === 'Enter') {
                 // User pressed Enter - submit password
@@ -35,14 +26,12 @@ export const promptForPassword = (xtermRef, promptText = 'Password: ') => {
                 active = false;
                 if (disposable) disposable.dispose(); // Remove listener
                 resolve(password);
-            } else if (domEvent.key === 'Backspace') {
-                if (password.length > 0) {
-                    // Remove last character from password
-                    password = password.slice(0, -1);
-                    // Move cursor back, overwrite with space, move back
-                    xtermRef.current.write('\b \b');
-                }
-            } else if (key.length === 1 && !domEvent.ctrlKey && !domEvent.metaKey && !domEvent.altKey) {
+            } else if (domEvent.key === 'Backspace' && password.length > 0) {
+                // Remove last character from password
+                password = password.slice(0, -1);
+                // Move cursor back, overwrite with space, move back
+                xtermRef.current.write('\b \b');
+            } else if (domEvent.key.length === 1 && !domEvent.ctrlKey && !domEvent.metaKey && !domEvent.altKey) {
                 // Regular character - add to password
                 password += key;
                 // Display asterisk instead of actual character
