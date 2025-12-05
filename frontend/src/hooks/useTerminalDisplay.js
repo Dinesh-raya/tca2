@@ -71,6 +71,9 @@ export const useTerminalDisplay = (xtermRef, state) => {
             '/theme <name>                                  - Change terminal theme',
             '/kick <username>                               - (Admin) Kick user from room',
             '/ban <username>                                - (Admin) Ban user from room',
+            '/sound on|off                                  - Toggle sound notifications',
+            '/profile [username]                            - View user profile',
+            '/roominfo                                      - View current room info',
             ''
         ];
         if (xtermRef.current) {
