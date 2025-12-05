@@ -8,10 +8,18 @@ import { useRef, useCallback } from 'react';
 export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPrompt, writePrompt, availableCommands = []) => {
     const inputBuffer = useRef('');
     const history = useRef([]);
-    const historyIndex = useRef(-1);
+    const isLocked = useRef(false);
+
+    const lockInput = useCallback(() => {
+        isLocked.current = true;
+    }, []);
+
+    const unlockInput = useCallback(() => {
+        isLocked.current = false;
+    }, []);
 
     const handleEnter = useCallback(() => {
-        if (!xtermRef.current) return;
+        if (!xtermRef.current || isLocked.current) return;
 
         const promptText = getPrompt();
         const totalLength = promptText.length + inputBuffer.current.length;
@@ -39,6 +47,7 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
     }, [xtermRef, getPrompt, onCommand, onMessage, writePrompt]);
 
     const handleBackspace = useCallback(() => {
+        if (isLocked.current) return;
         if (inputBuffer.current.length > 0) {
             inputBuffer.current = inputBuffer.current.slice(0, -1);
             if (xtermRef.current) {
@@ -48,6 +57,7 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
     }, [xtermRef]);
 
     const handleCharacter = useCallback((key) => {
+        if (isLocked.current) return;
         inputBuffer.current += key;
         if (xtermRef.current) {
             xtermRef.current.write(key);
@@ -55,6 +65,7 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
     }, [xtermRef]);
 
     const handleArrowUp = useCallback(() => {
+        if (isLocked.current) return;
         if (historyIndex.current > 0) {
             historyIndex.current--;
             const cmd = history.current[historyIndex.current];
@@ -72,6 +83,7 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
     }, [xtermRef, getPrompt, writePrompt]);
 
     const handleArrowDown = useCallback(() => {
+        if (isLocked.current) return;
         if (historyIndex.current < history.current.length - 1) {
             historyIndex.current++;
             const cmd = history.current[historyIndex.current];
@@ -100,6 +112,7 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
     }, [xtermRef, getPrompt, writePrompt]);
 
     const handleTab = useCallback(() => {
+        if (isLocked.current) return;
         const currentInput = inputBuffer.current;
         if (currentInput.startsWith('/')) {
             const matches = availableCommands.filter(cmd => cmd.startsWith(currentInput));
@@ -113,6 +126,8 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
 
     const setupKeyboardListener = useCallback((_container) => {
         const handleKeyEvent = ({ key, domEvent }) => {
+            if (isLocked.current) return;
+
             if (domEvent.key === 'Enter') {
                 handleEnter();
             } else if (domEvent.key === 'Backspace') {
@@ -154,6 +169,8 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
         clearInputBuffer,
         handleEnter,
         handleBackspace,
-        handleCharacter
+        handleCharacter,
+        lockInput,
+        unlockInput
     };
 };
