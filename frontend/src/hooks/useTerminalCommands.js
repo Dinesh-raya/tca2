@@ -6,7 +6,7 @@
 import { useCallback } from 'react';
 import { promptForPassword } from '../utils/terminalUtils';
 
-export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, display, onSocketCreated = null) => {
+export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, display, onSocketCreated = null, lockInput = () => { }, unlockInput = () => { }) => {
     const handleLoginCommand = useCallback(async (args) => {
         if (state.current.loggedIn) {
             display.writeOutput('Already logged in.');
@@ -24,7 +24,9 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         display.writeOutput(`Username: ${username}`);
 
         try {
+            lockInput();
             const password = await promptForPassword(xtermRef, 'Password: ');
+            unlockInput();
 
             if (!password) {
                 display.writeOutput('Login cancelled.');
@@ -59,10 +61,11 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             }
             display.writePrompt();
         } catch (err) {
+            unlockInput(); // Ensure unlocked on error
             display.writeError(`Login error: ${err.message}`);
             display.writePrompt();
         }
-    }, [state, socketRef, xtermRef, backendUrl, display, onSocketCreated]);
+    }, [state, socketRef, xtermRef, backendUrl, display, onSocketCreated, lockInput, unlockInput]);
 
     const handleListRoomsCommand = useCallback(async () => {
         try {
@@ -187,13 +190,30 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             return;
         }
 
-        if (args.length < 3) {
-            display.writeOutput('Usage: /adduser <username> <password> <securitykey>');
-            display.writePrompt();
-            return;
-        }
+        // Prompt for details if not provided
+        let username = args[0];
+        let password = args[1];
+        let securityKey = args[2];
 
         try {
+            lockInput();
+            if (!username) {
+                username = await getVisibleInput(xtermRef, 'Enter username: ');
+            }
+            if (!password) {
+                password = await promptForPassword(xtermRef, 'Enter password: ');
+            }
+            if (!securityKey) {
+                securityKey = await getSecretInput(xtermRef, 'Enter security key: ');
+            }
+            unlockInput();
+
+            if (!username || !password || !securityKey) {
+                display.writeError('All fields are required.');
+                display.writePrompt();
+                return;
+            }
+
             const res = await fetch(`${backendUrl}/api/auth/register`, {
                 method: 'POST',
                 headers: {
@@ -201,9 +221,9 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
                     'x-auth-token': state.current.token
                 },
                 body: JSON.stringify({
-                    username: args[0],
-                    password: args[1],
-                    securityKey: args[2]
+                    username,
+                    password,
+                    securityKey
                 })
             });
 
@@ -216,10 +236,11 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             }
             display.writePrompt();
         } catch (err) {
+            unlockInput();
             display.writeError('Network error.');
             display.writePrompt();
         }
-    }, [state, backendUrl, display]);
+    }, [state, backendUrl, display, lockInput, unlockInput]);
 
     const handleChangePassCommand = useCallback(async (args) => {
         if (!state.current.loggedIn) {
@@ -228,13 +249,29 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             return;
         }
 
-        if (args.length < 3) {
-            display.writeOutput('Usage: /changepass <oldpassword> <newpassword> <securitykey>');
-            display.writePrompt();
-            return;
-        }
+        let oldPassword = args[0];
+        let newPassword = args[1];
+        let securityKey = args[2];
 
         try {
+            lockInput();
+            if (!oldPassword) {
+                oldPassword = await promptForPassword(xtermRef, 'Old Password: ');
+            }
+            if (!newPassword) {
+                newPassword = await promptForPassword(xtermRef, 'New Password: ');
+            }
+            if (!securityKey) {
+                securityKey = await getSecretInput(xtermRef, 'Security Key: ');
+            }
+            unlockInput();
+
+            if (!oldPassword || !newPassword || !securityKey) {
+                display.writeError('All fields required.');
+                display.writePrompt();
+                return;
+            }
+
             const res = await fetch(`${backendUrl}/api/auth/change-password`, {
                 method: 'POST',
                 headers: {
@@ -242,9 +279,9 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
                     'x-auth-token': state.current.token
                 },
                 body: JSON.stringify({
-                    oldPassword: args[0],
-                    newPassword: args[1],
-                    securityKey: args[2]
+                    oldPassword,
+                    newPassword,
+                    securityKey
                 })
             });
 
@@ -262,10 +299,11 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             }
             display.writePrompt();
         } catch (err) {
+            unlockInput();
             display.writeError('Network error.');
             display.writePrompt();
         }
-    }, [state, socketRef, backendUrl, display]);
+    }, [state, socketRef, backendUrl, display, lockInput, unlockInput]);
 
     const handleGiveAccessCommand = useCallback(async (args) => {
         if (!state.current.loggedIn) {
