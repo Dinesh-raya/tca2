@@ -3,7 +3,7 @@
  * Manages all socket event listeners and responses
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 export const useSocketEvents = (socketRef, state, xtermRef, display) => {
     const setupSocketListeners = useCallback(() => {
@@ -204,9 +204,9 @@ export const useSocketEvents = (socketRef, state, xtermRef, display) => {
         }
     }, [state, socketRef, display]);
 
-    return {
+    return useMemo(() => ({
         setupSocketListeners,
         sendRoomMessage,
         sendDM
-    };
+    }), [setupSocketListeners, sendRoomMessage, sendDM]);
 };

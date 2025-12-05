@@ -4,7 +4,7 @@
  * Reduced from 598 to 240 lines
  */
 
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
@@ -47,11 +47,11 @@ const Terminal = () => {
     const commands = useTerminalCommands(state, socketRef, xtermRef, backendUrl, display, events.setupSocketListeners);
 
     // Update input hook with command/message handlers
-    const handleCommand = (cmd) => {
+    const handleCommand = useCallback((cmd) => {
         commands.handleCommand(cmd);
-    };
+    }, [commands]);
 
-    const handleMessage = (msg) => {
+    const handleMessage = useCallback((msg) => {
         if (!state.current.loggedIn) {
             display.writeError('Please login to send messages.');
             return;
@@ -64,7 +64,7 @@ const Terminal = () => {
         } else {
             display.writeError('Join a room or start a DM to send messages.');
         }
-    };
+    }, [state, display, events]);
 
     const input = useTerminalInput(xtermRef, state, handleCommand, handleMessage, display.getPrompt, display.writePrompt, AVAILABLE_COMMANDS);
 
@@ -118,7 +118,7 @@ const Terminal = () => {
             }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Keep empty - terminal should only initialize once
+    }, [input.setupKeyboardListener]); // Re-run if input handler changes
 
     return (
         <div style={{ position: 'relative', width: '100vw', height: '100vh', background: '#1e1e1e' }}>

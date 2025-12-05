@@ -3,7 +3,7 @@
  * Manages output, colors, formatting, and UI updates
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { sanitizeMessage, sanitizeUsername, sanitizeRoomName } from '../utils/sanitization';
 
 export const useTerminalDisplay = (xtermRef, state) => {
@@ -149,7 +149,7 @@ export const useTerminalDisplay = (xtermRef, state) => {
         }
     }, [xtermRef]);
 
-    return {
+    return useMemo(() => ({
         getPrompt,
         writePrompt,
         writeOutput,
@@ -163,5 +163,19 @@ export const useTerminalDisplay = (xtermRef, state) => {
         displayRoomHistory,
         displayDMHistory,
         displayWelcome
-    };
+    }), [
+        getPrompt,
+        writePrompt,
+        writeOutput,
+        writeError,
+        writeSuccess,
+        clearLine,
+        displayHelp,
+        displayRoomMessage,
+        displayDM,
+        displayUserList,
+        displayRoomHistory,
+        displayDMHistory,
+        displayWelcome
+    ]);
 };

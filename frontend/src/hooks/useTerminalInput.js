@@ -3,7 +3,7 @@
  * Manages input buffer, prompt display, and keyboard events
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 
 export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPrompt, writePrompt, availableCommands = []) => {
     const inputBuffer = useRef('');
@@ -163,7 +163,7 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
         inputBuffer.current = '';
     }, []);
 
-    return {
+    return useMemo(() => ({
         setupKeyboardListener,
         getInputBuffer,
         clearInputBuffer,
@@ -172,5 +172,5 @@ export const useTerminalInput = (xtermRef, state, onCommand, onMessage, getPromp
         handleCharacter,
         lockInput,
         unlockInput
-    };
+    }), [setupKeyboardListener, getInputBuffer, clearInputBuffer, handleEnter, handleBackspace, handleCharacter, lockInput, unlockInput]);
 };

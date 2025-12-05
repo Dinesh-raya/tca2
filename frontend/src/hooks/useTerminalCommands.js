@@ -6,7 +6,7 @@
 import { useCallback } from 'react';
 import { promptForPassword } from '../utils/terminalUtils';
 
-export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, display, onSocketCreated = null) => {
+export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, display, onSocketCreated = null, lockInput = () => { }, unlockInput = () => { }) => {
     const handleLoginCommand = useCallback(async (args) => {
         if (state.current.loggedIn) {
             display.writeOutput('Already logged in.');
@@ -549,6 +549,92 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         }
     }, [state, backendUrl, display]);
 
+    // /sound - Toggle sound notifications
+    const handleSoundCommand = useCallback((args) => {
+        if (args.length < 1) {
+            display.writeOutput(`Sound is currently ${state.current.soundEnabled ? 'ON' : 'OFF'}`);
+            display.writeOutput('Usage: /sound on|off');
+            display.writePrompt();
+            return;
+        }
+
+        const mode = args[0].toLowerCase();
+        if (mode === 'on') {
+            state.current.soundEnabled = true;
+            display.writeSuccess('Sound notifications enabled.');
+        } else if (mode === 'off') {
+            state.current.soundEnabled = false;
+            display.writeOutput('Sound notifications disabled.');
+        } else {
+            display.writeError('Usage: /sound on|off');
+        }
+        display.writePrompt();
+    }, [state, display]);
+
+    // /profile - View user profile
+    const handleProfileCommand = useCallback(async (args) => {
+        const targetUser = args.length > 0 ? args[0] : state.current.username;
+
+        if (!targetUser) {
+            display.writeError('Please login first or specify a user.');
+            display.writePrompt();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${backendUrl}/api/users/profile/${targetUser}`, {
+                headers: { 'x-auth-token': state.current.token }
+            });
+            const body = await res.json();
+
+            if (res.status === 200) {
+                display.writeOutput('--------------------------------');
+                display.writeOutput(`User Profile: ${body.username}`);
+                display.writeOutput(`Role: ${body.role}`);
+                display.writeOutput(`Joined: ${new Date(body.createdAt).toLocaleDateString()}`);
+                display.writeOutput(`Status: ${body.isOnline ? '🟢 Online' : '🔴 Offline'}`);
+                display.writeOutput('--------------------------------');
+            } else {
+                display.writeError(body.msg || 'User not found');
+            }
+            display.writePrompt();
+        } catch (err) {
+            display.writeError('Could not fetch profile.');
+            display.writePrompt();
+        }
+    }, [state, backendUrl, display]);
+
+    // /roominfo - View room stats
+    const handleRoomInfoCommand = useCallback(async () => {
+        if (!state.current.currentRoom) {
+            display.writeError('Join a room first.');
+            display.writePrompt();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${backendUrl}/api/rooms/info/${state.current.currentRoom}`, {
+                headers: { 'x-auth-token': state.current.token }
+            });
+            const body = await res.json();
+
+            if (res.status === 200) {
+                display.writeOutput('--------------------------------');
+                display.writeOutput(`Room: ${body.name}`);
+                display.writeOutput(`Created: ${new Date(body.createdAt).toLocaleDateString()}`);
+                display.writeOutput(`Members: ${body.memberCount}`);
+                display.writeOutput(`Online: ${body.onlineCount}`);
+                display.writeOutput('--------------------------------');
+            } else {
+                display.writeError(body.msg || 'Room info not found');
+            }
+            display.writePrompt();
+        } catch (err) {
+            display.writeError('Could not fetch room info.');
+            display.writePrompt();
+        }
+    }, [state, backendUrl, display]);
+
     const handleCommand = useCallback((cmd) => {
         const [command, ...args] = cmd.split(' ');
 
@@ -609,6 +695,15 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             case '/ban':
                 handleBanCommand(args);
                 break;
+            case '/sound':
+                handleSoundCommand(args);
+                break;
+            case '/profile':
+                handleProfileCommand(args);
+                break;
+            case '/roominfo':
+                handleRoomInfoCommand();
+                break;
             default:
                 display.writeError(`Unknown command: ${command}. Type /help for list of commands.`);
                 display.writePrompt();
@@ -630,7 +725,10 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
         handleOnlineCommand,
         handleThemeCommand,
         handleKickCommand,
-        handleBanCommand
+        handleBanCommand,
+        handleSoundCommand,
+        handleProfileCommand,
+        handleRoomInfoCommand
     ]);
 
     return {
