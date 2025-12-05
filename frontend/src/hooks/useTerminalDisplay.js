@@ -64,13 +64,6 @@ export const useTerminalDisplay = (xtermRef, state) => {
             '/createroom <roomname>                         - (Admin) Create new room',
             '/giveaccess <user1,user2,...> <roomname>       - (Admin) Grant room access to users',
             '/quit                                          - Quit the app',
-            '',
-            '--- New Features ---',
-            '/clear                                         - Clear terminal screen',
-            '/online                                        - Show all online users',
-            '/theme <name>                                  - Change terminal theme',
-            '/kick <username>                               - (Admin) Kick user from room',
-            '/ban <username>                                - (Admin) Ban user from room',
             ''
         ];
         if (xtermRef.current) {
