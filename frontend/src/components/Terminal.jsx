@@ -44,7 +44,7 @@ const Terminal = () => {
     const events = useSocketEvents(socketRef, state, xtermRef, display);
 
     // Setup commands after other dependencies are ready
-    const commands = useTerminalCommands(state, socketRef, xtermRef, backendUrl, display);
+    const commands = useTerminalCommands(state, socketRef, xtermRef, backendUrl, display, events.setupSocketListeners);
 
     // Update input hook with command/message handlers
     const handleCommand = (cmd) => {

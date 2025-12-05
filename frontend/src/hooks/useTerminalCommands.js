@@ -6,7 +6,7 @@
 import { useCallback } from 'react';
 import { promptForPassword } from '../utils/terminalUtils';
 
-export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, display) => {
+export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, display, onSocketCreated = null) => {
     const handleLoginCommand = useCallback(async (args) => {
         if (state.current.loggedIn) {
             display.writeOutput('Already logged in.');
@@ -49,7 +49,11 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
                 socketRef.current = new (require('socket.io-client')).io(backendUrl, {
                     auth: { token: body.token }
                 });
-                // Socket listeners will be set up in useSocketEvents
+
+                // Setup socket listeners now that socket exists
+                if (onSocketCreated) {
+                    onSocketCreated();
+                }
             } else {
                 display.writeError(`Login failed: ${body.msg || 'Invalid credentials'}`);
             }
@@ -58,7 +62,7 @@ export const useTerminalCommands = (state, socketRef, xtermRef, backendUrl, disp
             display.writeError(`Login error: ${err.message}`);
             display.writePrompt();
         }
-    }, [state, socketRef, xtermRef, backendUrl, display]);
+    }, [state, socketRef, xtermRef, backendUrl, display, onSocketCreated]);
 
     const handleListRoomsCommand = useCallback(async () => {
         try {
