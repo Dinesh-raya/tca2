@@ -23,7 +23,7 @@ const { errorHandler, notFound } = require('./middleware/errorHandler');
 // Routes
 const authRoutes = require('./routes/auth.routes');
 const roomRoutes = require('./routes/room.routes');
-const adminRoutes = require('./routes/admin.routes');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const server = http.createServer(app);
